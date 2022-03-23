@@ -1,6 +1,8 @@
 # Chat Application
 This project was made as my module 6 project for the class CSE 330. The application utilized Node.JS with Socket.io to allow for instantanious messaging between two or more people. People can create their own public or private rooms in which to chat with others.
 
+![Chat app image](https://williamsilberste.in/res/chatroom.png)
+
 ## How to use
  - Configure port number (defaults to 3456)
  - run "node server.js"
