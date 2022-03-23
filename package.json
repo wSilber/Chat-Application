@@ -1,0 +1,17 @@
+{
+  "name": "mod6backup",
+  "version": "1.0.0",
+  "description": "473590",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "mime": "~2.4.6",
+    "request": "^2.88.2",
+    "socket.io": "^1.7.4"
+  },
+  "author": "",
+  "license": "ISC"
+}

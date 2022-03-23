@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatroom</title>
+
+    <!-- Bootstrap and Jquery UI stylesheets -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+
+    <!-- Custom Stylesheet-->
+    <link rel="stylesheet" href="css/main.css">
+
+    <!-- Load javascript before DOM -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        
+        //Connect to sockets
+        var socketio = io.connect();
+
+        //Adds all public rooms to global room page
+        socketio.on("send-all-rooms", function(data) {
+            document.getElementById('public-chat-rooms').innerHTML = '';
+            for(let key in data) {
+                if(key != 'global') {
+                    addPublicChatRoom(data[key])
+                }
+            }
+        })
+
+        //Function to append a public room to the page
+        function addPublicChatRoom(room) {
+
+            let roomName = document.createElement('span');
+            roomName.classList.add('main-color')
+            roomName.innerText = room.name;
+
+            let roomNameDiv = document.createElement('div');
+            roomNameDiv.classList.add('col-sm-6');
+            roomNameDiv.classList.add('room-name');
+
+            roomNameDiv.appendChild(roomName);
+
+            let roomPeople = document.createElement('span');
+            roomPeople.classList.add('main-color')
+            roomPeople.innerText = "There are " + room.users.length + " people online";
+
+            let roomPeopleDiv = document.createElement('div');
+            roomPeopleDiv.classList.add('col-sm-6');
+            roomPeopleDiv.classList.add('room-people');
+
+            roomPeopleDiv.appendChild(roomPeople)
+
+            let row = document.createElement('div');
+            row.classList.add('row');
+
+            row.appendChild(roomNameDiv);
+            row.appendChild(roomPeopleDiv);
+            
+            let container = document.createElement('div');
+            container.classList.add('container-fluid');
+            container.classList.add('chatroom');
+            container.id = room.name
+
+            container.appendChild(row);
+
+            document.getElementById('public-chat-rooms').appendChild(container);
+
+            //User will join room on click
+            document.getElementById(room.name).addEventListener('click', function() {
+                joinRoom(room.name);
+            })
+        }    
+    </script>
+</head>
+<body>
+
+    <!-- Navbar to get to other pages -->
+    <nav class="navbar dark-background">
+        <div class="container-fluid">
+            <div class="col-sm-2"></div>
+            <div class="col-sm-2"></div>
+
+            <!-- Chatroom button - will take you back to global chat room -->
+            <div class="col-sm-4" style="text-align: center;">
+                <h1 id="nav-title" class="centered"><button style="background-color: #0B0C10; border: none" class="main-color">Chatroom</button></h1>
+            </div>
+            <div class="col-sm-4" style="text-align: right;">
+
+                <!-- Login button -->
+                <div id="show-login-btn">
+                    <div class="input-group">
+                        <input type="text" class="form-control inputs" id="username-input" placeholder="Username">
+                        <div class="input-group-append">
+                            <button type="button" id="set-username-btn" class="btn dark-blue-btn">Set Username</button>
+                        </div>
+                    </div>
+                </div> 
+
+                <!-- Logout button -->
+                <div id="show-logout-btn">
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                            <span class="input-group-text inputs-nm" id="show-username">Welcome USERNAME</span>
+                        </div>
+                        <button id="logout-btn" class="btn dark-blue-btn">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Div to display error -->
+    <div id="error-alert" class="alert alert-info alert-dismissible fade show" role="alert">
+        <div id="error"></div>
+        <button id="error-dismiss" type="button" class="close"  aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+
+    <!-- Container for Global chat and homepage -->
+    <div id="main-content" class="container-fluid">
+        <div class="row">
+            <div id="global-chat-container" class="col-sm-6">
+                <div id="global-chat-container-p">
+                    <div id="global-chat-title-container">
+                        <h3 id="global-chat-title" class="main-color centered">Global Chat Room</h3>
+                    </div>
+                    <div id="global-chat">
+
+                        <!-- Chat log for messages to be appended to -->
+                        <div id="chatlog-global" class="chatlog"></div>
+                    </div>
+
+                    <!-- Input to send message to global chat -->
+                    <div id="global-chat-inputs" class="input-group row mb-3">
+                            <div class="input-group-prepend">
+                                    <label for="global-upload-photo" class="form-control inputs dark-blue-btn">Upload</label>
+                                    <input type='file' name="photo" id="global-upload-photo"/>
+                              </div>
+                            <input class="form-control" type="text" id="global-chat-input"/>
+                            <div class="input-group-append">
+                                <button type="button" class="btn dark-blue-btn dropdown-toggle dropdown-toggle-split form-control" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <span class="sr-only">Toggle Dropdown</span>
+                                    </button>
+                                    <div class="dropdown-menu" id="colors-global" style="background-color: #0B0C10;">
+                                        <button id="default" style="color: #66FCF1;" class="dropdown-item" value='selected'>Default</button>
+                                        <button id="red" class="dropdown-item" style="color: red;">Red</button>
+                                        <button id="orange" class="dropdown-item" style="color: orange;">Orange</button>
+                                        <button id="yellow" class="dropdown-item" style="color: yellow;">Yellow</button>
+                                        <button id="green" class="dropdown-item" style="color: green;">Green</button>
+                                        <button id="purple" class="dropdown-item" style="color: purple;">Purple</button>
+                                        <button id="blue" class="dropdown-item" style="color: blue;">Blue</button>
+                                    </div>
+                                <button class="form-control btn dark-blue-btn" type="button" id="global-send-message-btn">send</button>
+                          </div>
+                    </div>
+                </div>
+            </div>
+            <div class="container col-sm-6">
+                <div class="create-room-container">            
+                    <h3 class="main-color centered">Create A Chat Room</h3>      
+                    
+                    <!-- Inputs to create a chat room -->
+                    <div class="input-group">
+                    <input type="text" class="form-control inputs" placeholder="Chatroom Name" id="create-chat-room-name">
+
+                    <!-- Dropdown button to change room from public to private -->
+                    <div class="input-group-append">
+                        <button type="button" class="btn dark-blue-btn dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <span class="sr-only">Toggle Dropdown</span>
+                        </button>
+                        <div class="dropdown-menu">
+                        <button id="create-chat-room-public-btn" class="dropdown-item create-chat-room-security dark-blue-btn" value='selected'>Public</button>
+                        <button id="create-chat-room-private-btn" class="dropdown-item create-chat-room-security dark-blue-btn">Private</button>
+                        </div>
+                        <button type="button" class="btn dark-blue-btn" id="create-chat-room-btn">Create</button>
+                        
+                    </div>
+
+                    <!-- Password input for private rooms -->
+                    <div class="input-group">
+                        <input type="text" id="create-private-room-password-input" style="margin-top: 10px" class="form-control inputs" placeholder="Password">
+                    </div>
+
+                    
+                </div>
+            </div>
+                <div id="private-chat-rooms">
+                    <h3 class="main-color centered">Join a Private Chatroom</h3>
+
+                    <!-- Join private room inputs -->
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                          <span class="input-group-text inputs">Room Name</span>
+                        </div>
+                        <input type="text" class="form-control inputs" id="join-private-room-name-input">
+                    </div>
+                    <div class="input-group">
+                        <div class="input-group-prepend">
+                          <span class="input-group-text inputs">Password</span>
+                        </div>
+                        <input type="text" class="form-control inputs" id="join-private-room-password-input">
+                    </div>
+                    <button type="button" id="join-private-room-btn" class="btn btn-block dark-blue-btn">Join</button>
+                </div>
+                <div class="public-chat-rooms-title-container">
+                    <h3 class="main-color centered">Join A Public Chatroom</h3>
+                </div>
+
+                <!-- Container for public rooms -->
+                <div id="public-chat-rooms">   
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Public/Private chatroom container-->
+    <div id="chatroom-div" style="display: none">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-3" >
+                    <div id="rooms-container">
+                       
+                    </div>
+                </div>
+                <div class="col-sm-6">
+                    <div id="chat-container" class="col-sm-6">
+                        <div id="chat-container-p" class="container">
+                            <div class="row">
+                                <div class="col-sm-3">
+
+                                    <!-- Admin controls -->
+                                    <button class="btn dark-blue-btn centered" id="admin-controls" data-toggle="modal" data-target="admin-modal">Admin</button>
+                                </div>
+                                <div class="col-sm-6">
+                                    <h3 id="chatroom-title" class="main-color centered">Chatroom</h3>
+                                </div>
+                                <div class="col-sm-3"></div>
+                            </div>
+                            <div id="chatlog-container">
+                                <div id="chat">
+
+                                    <!-- container for chat messages to be appended to -->
+                                    <div id="chatlog" class="chatlog-name"></div>
+                                </div>
+                            </div>
+
+                             <!-- Send message inputs -->
+                             <div id="chat-inputs" class="input-group row mb-3">
+                                <div class="input-group-prepend">
+                                    <label for="room-upload-photo" class="form-control inputs">Upload</label>
+                                    <input type='file' name="photo" id="room-upload-photo"/>
+                                </div>
+                                <input class="form-control" type="text" id="chat-input"/>
+                                <div class="input-group-append">
+                                    <button type="button" class="btn dark-blue-btn dropdown-toggle dropdown-toggle-split form-control" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <span class="sr-only">Toggle Dropdown</span>
+                                        </button>
+                                        <div class="dropdown-menu" id="colors-room" style="background-color: #0B0C10;">
+                                            <button id="default-room" style="color: #66FCF1;" class="dropdown-item" value='selected'>Default</button>
+                                            <button id="red-room" class="dropdown-item" style="color: red;">Red</button>
+                                            <button id="orange-room" class="dropdown-item" style="color: orange;">Orange</button>
+                                            <button id="yellow-room" class="dropdown-item" style="color: yellow;">Yellow</button>
+                                            <button id="green-room" class="dropdown-item" style="color: green;">Green</button>
+                                            <button id="purple-room" class="dropdown-item" style="color: purple;">Purple</button>
+                                            <button id="blue-room" class="dropdown-item" style="color: blue;">Blue</button>
+                                        </div>
+                                    <button class="form-control btn dark-blue-btn" type="button" id="room-chat-btn">send</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-sm-3">
+                    <div id="online-users-container">
+                        <h3 class="main-color centered" style="margin-top: 5vh;">Online Users</h3>
+                        <p class="main-color centered">Click a user to whisper</p>
+                    </div>
+
+                    <!-- Container to display all online users in room -->
+                    <div id="online-users"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Admin Modal -->
+<div class="modal fade" id="admin-modal" tabindex="-1" aria-labelledby="admin-modal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content medium-background">
+        <div class="modal-header centered dark-background" style="border-bottom: 1px solid #45A29E;">
+            <h4 class="centered main-color">Admin Controls</h4>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true" style="color: #66FCF1">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body container">
+            <div class="row">
+
+                <!-- Kick user inputs -->
+                <div class="col-sm-6">
+                    <h5 class="centered main-color">Kick User</h5>
+                    <input id="kick-user-input" class="inputs" placeholder="username">
+                    <button id="kick-user-btn" class="btn dark-blue-btn">Kick</button>
+                </div>
+
+                <!-- Ban user inputs -->
+                <div class="col-sm-6">
+                    <h5 class="centered main-color">Ban User</h5>
+                    <input id="ban-user-input" class="inputs" placeholder="username">
+                    <button id="ban-user-btn" class="btn dark-blue-btn">Ban</button>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<!-- Image Modal -->
+<div class="modal fade" id="image-modal" tabindex="-1" aria-labelledby="image-modal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content medium-background">
+        <div class="modal-header centered dark-background" style="border-bottom: 1px solid #45A29E;">
+
+            <!-- User -->
+            <h4 class="centered main-color" id="image-header">User</h4>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true" style="color: #66FCF1">&times;</span>
+          </button>
+        </div>
+
+        <!-- Container for Image-->
+        <div class="modal-body container" id="image-modal-body">
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+    <!-- Bootstrap Javascript Scripts -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+
+    <!-- Custom javascript scripts to be loaded after body -->
+    <script src="js/login.js"></script>
+    <script src="js/rooms.js"></script>
+
+</body>
+</html>
